@@ -12,6 +12,7 @@ pkgs.mkShell {
     clang-tools
 
     raylib
+    emscripten
 
     # Wayland
     wayland
