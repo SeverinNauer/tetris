@@ -1,0 +1,7 @@
+build/
+game
+*.o
+*.out
+.direnv/
+compile_commands.json
+.cache
