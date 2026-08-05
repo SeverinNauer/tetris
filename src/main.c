@@ -9,6 +9,9 @@ const int screenHeight = 450;
 const int blockSize = 20;
 const int matrixWidth = 10;
 const int matrixHeight = 20;
+const int basePoints[4] = {40, 100, 300, 1200};
+uint32_t score = 0;
+uint32_t linesCleared = 0;
 
 Vector2 matrixPosition = {.x = 100, .y = 20};
 
@@ -134,6 +137,25 @@ void drawStack(BoardBlock stack[matrixHeight][matrixWidth]) {
   }
 }
 
+void drawScore(uint32_t score, int level, uint32_t linesCleared) {
+  Vector2 scorePosition = {.x = matrixPosition.x + matrixWidth * blockSize + 50,
+                           .y = matrixPosition.y + matrixHeight * blockSize -
+                                150};
+  char text[11];
+
+  Color color = LIME;
+
+  sprintf(text, "%i", score);
+  DrawText("Score", scorePosition.x, scorePosition.y, 20, BLACK);
+  DrawText(text, scorePosition.x, scorePosition.y + 20, 24, color);
+  sprintf(text, "%i", level);
+  DrawText("Level", scorePosition.x, scorePosition.y + 50, 20, BLACK);
+  DrawText(text, scorePosition.x, scorePosition.y + 70, 24, color);
+  sprintf(text, "%i", linesCleared);
+  DrawText("Lines", scorePosition.x, scorePosition.y + 100, 20, BLACK);
+  DrawText(text, scorePosition.x, scorePosition.y + 120, 24, color);
+}
+
 bool canMove(Vector2 position, const Tetromino *tetromino, int rotation,
              BoardBlock stack[matrixHeight][matrixWidth]) {
   Vector2 blockPositions[4];
@@ -185,13 +207,24 @@ void shiftRowsDown(BoardBlock stack[matrixHeight][matrixWidth], int row) {
   }
 }
 
-void clearLines(BoardBlock stack[matrixHeight][matrixWidth]) {
+int clearLines(BoardBlock stack[matrixHeight][matrixWidth]) {
+  int lineCount = 0;
   for (int i = matrixHeight - 1; i >= 0; i--) {
     if (isRowFull(stack[i])) {
       shiftRowsDown(stack, i);
       i++;
+      lineCount++;
     }
   }
+  return lineCount;
+}
+
+int getCurrentLevel() { return linesCleared / 10; }
+
+void addToScore(int linesCount, int level) {
+  if (linesCount <= 0 || linesCount > 4)
+    return;
+  score += basePoints[linesCount - 1] * (level + 1);
 }
 
 int main(void) {
@@ -239,7 +272,9 @@ int main(void) {
         current_tetromino = blockTypes[rIndex];
         current_position.x = 4;
         current_position.y = 0;
-        clearLines(stack);
+        int linesClearedNow = clearLines(stack);
+        addToScore(linesClearedNow, getCurrentLevel());
+        linesCleared += linesClearedNow;
       }
       timer -= 0.7f;
     }
@@ -273,6 +308,7 @@ int main(void) {
       if (canMove(positionToTest, &current_tetromino, current_rotation,
                   stack)) {
         current_position.y += 1.0f;
+        score += 1;
       }
     }
 
@@ -292,6 +328,7 @@ int main(void) {
     drawMatrix(matrixPosition, matrixWidth, matrixHeight);
     drawTetromino(current_position, &current_tetromino, current_rotation);
     drawStack(stack);
+    drawScore(score, getCurrentLevel(), linesCleared);
 
     EndDrawing();
   }
