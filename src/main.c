@@ -4,6 +4,41 @@
 #include <stdint.h>
 #include <stdio.h>
 
+// calculated drop times for level 0 to 29 based on nes
+// speed stays the same after level 29
+static const float dropTime[] = {
+    48.0 / 60.0, // Level 0
+    43.0 / 60.0, // Level 1
+    38.0 / 60.0, // Level 2
+    33.0 / 60.0, // Level 3
+    28.0 / 60.0, // Level 4
+    23.0 / 60.0, // Level 5
+    18.0 / 60.0, // Level 6
+    13.0 / 60.0, // Level 7
+    8.0 / 60.0,  // Level 8
+    6.0 / 60.0,  // Level 9
+    5.0 / 60.0,  // Level 10
+    5.0 / 60.0,  // Level 11
+    5.0 / 60.0,  // Level 12
+    4.0 / 60.0,  // Level 13
+    4.0 / 60.0,  // Level 14
+    4.0 / 60.0,  // Level 15
+    3.0 / 60.0,  // Level 16
+    3.0 / 60.0,  // Level 17
+    3.0 / 60.0,  // Level 18
+    2.0 / 60.0,  // Level 19
+    2.0 / 60.0,  // Level 20
+    2.0 / 60.0,  // Level 21
+    2.0 / 60.0,  // Level 22
+    2.0 / 60.0,  // Level 23
+    2.0 / 60.0,  // Level 24
+    2.0 / 60.0,  // Level 25
+    2.0 / 60.0,  // Level 26
+    2.0 / 60.0,  // Level 27
+    2.0 / 60.0,  // Level 28
+    1.0 / 60.0   // Level 29+
+};
+
 const int screenWidth = 800;
 const int screenHeight = 450;
 const int blockSize = 20;
@@ -54,6 +89,12 @@ Tetromino T = {.name = 'T',
                .definitions = {0b0100111000000000, 0b0100011001000000,
                                0b0000111001000000, 0b0100110001000000},
                .color = PURPLE};
+
+float getCurrentDropTime(int level) {
+  level = level <= 29 ? level : 29;
+  return dropTime[level];
+}
+
 void drawLine(float x, float y, float endX, float endY) {
   Vector2 start = {.x = x, .y = y};
   Vector2 end = {.x = endX, .y = endY};
@@ -242,7 +283,7 @@ int main(void) {
   SetConfigFlags(FLAG_WINDOW_HIGHDPI);
   InitWindow(screenWidth, screenHeight, "Best Tetris Ever");
 
-  SetTargetFPS(60);
+  SetTargetFPS(240);
 
   int tetrominoIndex = GetRandomValue(0, 6);
 
@@ -252,12 +293,16 @@ int main(void) {
 
   float timer = 0.0f;
   int current_rotation = 0;
+  float currentDropTime = dropTime[0];
 
   while (!WindowShouldClose()) {
 
     timer += GetFrameTime();
 
-    if (timer >= 0.7f) {
+    int level = getCurrentLevel();
+    currentDropTime = getCurrentDropTime(level);
+
+    if (timer >= currentDropTime) {
       Vector2 positionToTest = {.x = current_position.x,
                                 .y = current_position.y + 1};
       if (canMove(positionToTest, &current_tetromino, current_rotation,
@@ -273,10 +318,10 @@ int main(void) {
         current_position.x = 4;
         current_position.y = 0;
         int linesClearedNow = clearLines(stack);
-        addToScore(linesClearedNow, getCurrentLevel());
+        addToScore(linesClearedNow, level);
         linesCleared += linesClearedNow;
       }
-      timer -= 0.7f;
+      timer -= currentDropTime;
     }
 
     if (IsKeyPressed(KEY_UP)) {
@@ -328,7 +373,7 @@ int main(void) {
     drawMatrix(matrixPosition, matrixWidth, matrixHeight);
     drawTetromino(current_position, &current_tetromino, current_rotation);
     drawStack(stack);
-    drawScore(score, getCurrentLevel(), linesCleared);
+    drawScore(score, level, linesCleared);
 
     EndDrawing();
   }
