@@ -268,6 +268,20 @@ void addToScore(int linesCount, int level) {
   score += basePoints[linesCount - 1] * (level + 1);
 }
 
+void lockAndRespawn(Tetromino *current, Vector2 *position, int *rotation,
+                    BoardBlock stack[matrixHeight][matrixWidth], int level,
+                    Tetromino blockTypes[]) {
+  updateStack(stack, current, *position, *rotation);
+  *rotation = 0;
+  int rIndex = GetRandomValue(0, 6);
+  *current = blockTypes[rIndex];
+  position->x = 4;
+  position->y = 0;
+  int linesClearedNow = clearLines(stack);
+  addToScore(linesClearedNow, level);
+  linesCleared += linesClearedNow;
+}
+
 int main(void) {
   Tetromino blockTypes[] = {O, Z, J, L, S, T, I};
 
@@ -293,35 +307,60 @@ int main(void) {
 
   float timer = 0.0f;
   int current_rotation = 0;
-  float currentDropTime = dropTime[0];
 
   while (!WindowShouldClose()) {
 
     timer += GetFrameTime();
 
     int level = getCurrentLevel();
-    currentDropTime = getCurrentDropTime(level);
+
+    if (IsKeyPressed(KEY_SPACE)) {
+      int drop = 0;
+      Vector2 positionToTest = {.x = current_position.x,
+                                .y = current_position.y + 1};
+      while (canMove(positionToTest, &current_tetromino, current_rotation,
+                     stack)) {
+        current_position.y += 1.0f;
+        drop++;
+        positionToTest.y += 1.0f;
+      }
+      score += drop;
+      lockAndRespawn(&current_tetromino, &current_position, &current_rotation,
+                     stack, level, blockTypes);
+      timer = 0;
+    }
+
+    if (IsKeyPressed(KEY_DOWN)) {
+      Vector2 positionToTest = {.x = current_position.x,
+                                .y = current_position.y + 1};
+      if (canMove(positionToTest, &current_tetromino, current_rotation,
+                  stack)) {
+        current_position.y += 1.0f;
+        score += 1;
+      } else {
+        lockAndRespawn(&current_tetromino, &current_position, &current_rotation,
+                       stack, level, blockTypes);
+      }
+      timer = 0;
+    }
+
+    float currentDropTime =
+        IsKeyDown(KEY_DOWN) ? 0.08f : getCurrentDropTime(level);
 
     if (timer >= currentDropTime) {
       Vector2 positionToTest = {.x = current_position.x,
                                 .y = current_position.y + 1};
       if (canMove(positionToTest, &current_tetromino, current_rotation,
                   stack)) {
+        if (IsKeyDown(KEY_DOWN)) {
+          score += 1;
+        }
         current_position.y += 1.0f;
       } else {
-        updateStack(stack, &current_tetromino, current_position,
-                    current_rotation);
-        current_rotation = 0;
-        int rIndex = GetRandomValue(0, 6);
-
-        current_tetromino = blockTypes[rIndex];
-        current_position.x = 4;
-        current_position.y = 0;
-        int linesClearedNow = clearLines(stack);
-        addToScore(linesClearedNow, level);
-        linesCleared += linesClearedNow;
+        lockAndRespawn(&current_tetromino, &current_position, &current_rotation,
+                       stack, level, blockTypes);
       }
-      timer -= currentDropTime;
+      timer = 0;
     }
 
     if (IsKeyPressed(KEY_UP)) {
@@ -344,16 +383,6 @@ int main(void) {
       if (canMove(positionToTest, &current_tetromino, current_rotation,
                   stack)) {
         current_position.x += 1.0f;
-      }
-    }
-
-    if (IsKeyPressed(KEY_DOWN)) {
-      Vector2 positionToTest = {.x = current_position.x,
-                                .y = current_position.y + 1};
-      if (canMove(positionToTest, &current_tetromino, current_rotation,
-                  stack)) {
-        current_position.y += 1.0f;
-        score += 1;
       }
     }
 
