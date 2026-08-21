@@ -3,6 +3,7 @@ project(Tetris C)
 
 set(CMAKE_C_STANDARD 23)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_COLOR_DIAGNOSTICS ON)
 
 # Can be removed now?
 #
@@ -22,3 +23,33 @@ FetchContent_MakeAvailable(raylib)
 
 add_executable(raylib-demo src/main.c)
 target_link_libraries(raylib-demo PRIVATE raylib)
+
+# Some sexy warnings
+target_compile_options(raylib-demo PRIVATE
+    # -Werror
+    -Wall
+    -Wextra
+    -Wpedantic
+    -Wconversion
+    -Wsign-conversion
+    -Wshadow
+    -Wdouble-promotion
+    -Wswitch-enum
+    -Wnull-dereference
+    -Wformat=2
+    -Wstrict-prototypes
+    -Wmissing-prototypes
+    -Wmissing-declarations
+    -Wvla
+    -Wcast-align
+    -Wcast-qual
+    -Wundef
+    -Wredundant-decls
+)
+
+# Release optimizations
+add_compile_options(
+    $<$<CONFIG:Release>:-O3>
+    $<$<CONFIG:Release>:-flto=full>
+)
+add_link_options($<$<CONFIG:Release>:-flto=full>)
