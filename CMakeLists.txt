@@ -18,6 +18,7 @@ FetchContent_Declare(raylib
   GIT_REPOSITORY https://github.com/raysan5/raylib
   GIT_TAG 6.0
   GIT_SHALLOW TRUE
+  SYSTEM
 )
 FetchContent_MakeAvailable(raylib)
 
@@ -29,7 +30,7 @@ target_compile_options(raylib-demo PRIVATE
     # -Werror
     -Wall
     -Wextra
-    -Wpedantic
+    # -Wpedantic
     -Wconversion
     -Wsign-conversion
     -Wshadow
@@ -38,8 +39,8 @@ target_compile_options(raylib-demo PRIVATE
     -Wnull-dereference
     -Wformat=2
     -Wstrict-prototypes
-    -Wmissing-prototypes
-    -Wmissing-declarations
+    # -Wmissing-prototypes
+    # -Wmissing-declarations
     -Wvla
     -Wcast-align
     -Wcast-qual
