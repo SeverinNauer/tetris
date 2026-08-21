@@ -46,6 +46,7 @@ constexpr int matrixWidth = 10;
 constexpr int matrixHeight = 20;
 constexpr uint32_t basePoints[4] = {40, 100, 300, 1200};
 
+// NOTE: I added a underline suffix to the following global variable to prevent shadowing
 uint32_t score_ = 0;
 uint32_t linesCleared_ = 0;
 
@@ -478,7 +479,7 @@ int main(void)
             timer = 0;
         }
 
-        if (IsKeyPressed(KEY_DOWN)) {
+        if (IsKeyPressed(KEY_DOWN) || IsKeyPressed(KEY_J)) {
             Vector2 positionToTest = {.x = current_position.x, .y = current_position.y + 1};
             if (canMove(positionToTest, &current_tetromino, current_rotation, stack)) {
                 current_position.y += 1.0f;
@@ -495,12 +496,13 @@ int main(void)
             timer = 0;
         }
 
-        float currentDropTime = IsKeyDown(KEY_DOWN) ? 0.08f : getCurrentDropTime(level);
+        const float currentDropTime =
+          (IsKeyDown(KEY_DOWN) || IsKeyDown(KEY_J)) ? 0.08f : getCurrentDropTime(level);
 
         if (timer >= currentDropTime) {
             Vector2 positionToTest = {.x = current_position.x, .y = current_position.y + 1};
             if (canMove(positionToTest, &current_tetromino, current_rotation, stack)) {
-                if (IsKeyDown(KEY_DOWN)) {
+                if (IsKeyDown(KEY_DOWN) || IsKeyDown(KEY_J)) {
                     score_ += 1;
                 }
                 current_position.y += 1.0f;
@@ -516,7 +518,7 @@ int main(void)
             timer = 0;
         }
 
-        if (IsKeyPressed(KEY_UP)) {
+        if (IsKeyPressed(KEY_UP) || IsKeyPressed(KEY_K)) {
             int next_rotation = (current_rotation + 1) % 4;
             if (canMove(current_position, &current_tetromino, next_rotation, stack)) {
                 current_rotation = next_rotation;
@@ -530,14 +532,14 @@ int main(void)
             }
         }
 
-        if (IsKeyPressed(KEY_RIGHT)) {
+        if (IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_L)) {
             Vector2 positionToTest = {.x = current_position.x + 1, .y = current_position.y};
             if (canMove(positionToTest, &current_tetromino, current_rotation, stack)) {
                 current_position.x += 1.0f;
             }
         }
 
-        if (IsKeyPressed(KEY_LEFT)) {
+        if (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_H)) {
             Vector2 positionToTest = {.x = current_position.x - 1, .y = current_position.y};
             if (canMove(positionToTest, &current_tetromino, current_rotation, stack)) {
                 current_position.x -= 1.0f;
