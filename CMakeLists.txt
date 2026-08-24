@@ -5,13 +5,6 @@ set(CMAKE_C_STANDARD 23)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_COLOR_DIAGNOSTICS ON)
 
-# Can be removed now?
-#
-# # Pass Nix compiler flags so clangd can find includes in compile_commands.json
-# if(DEFINED ENV{NIX_CFLAGS_COMPILE})
-#   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} $ENV{NIX_CFLAGS_COMPILE}")
-# endif()
-
 include(FetchContent)
 
 FetchContent_Declare(raylib
@@ -24,6 +17,25 @@ FetchContent_MakeAvailable(raylib)
 
 add_executable(raylib-demo src/main.c)
 target_link_libraries(raylib-demo PRIVATE raylib)
+
+if (EMSCRIPTEN)
+    set_target_properties(raylib-demo
+        PROPERTIES
+            OUTPUT_NAME "index"
+            SUFFIX ".html"
+    )
+
+    target_link_options(raylib-demo
+        PRIVATE
+            -sASYNCIFY
+            -sALLOW_MEMORY_GROWTH=1
+            -sGROWABLE_ARRAYBUFFERS=0
+            -sINITIAL_MEMORY=134217728
+            -sFORCE_FILESYSTEM=1
+            -sMINIFY_HTML=0
+            --shell-file "${CMAKE_SOURCE_DIR}/web/shell.html"
+    )
+endif()
 
 # Some sexy warnings
 target_compile_options(raylib-demo PRIVATE
@@ -48,9 +60,11 @@ target_compile_options(raylib-demo PRIVATE
     -Wredundant-decls
 )
 
-# Release optimizations
-add_compile_options(
-    $<$<CONFIG:Release>:-O3>
-    $<$<CONFIG:Release>:-flto=full>
+target_compile_options(raylib-demo PRIVATE
+    $<$<CONFIG:Release>:-Os>
+    $<$<CONFIG:Release>:-flto>
 )
-add_link_options($<$<CONFIG:Release>:-flto=full>)
+target_link_options(raylib-demo PRIVATE
+    $<$<CONFIG:Release>:-Os>
+    $<$<CONFIG:Release>:-flto>
+)

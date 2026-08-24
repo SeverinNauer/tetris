@@ -10,6 +10,7 @@ pkgs.mkShell {
     cmake
     gdb
     clang-tools
+    ninja
 
     raylib
     emscripten
