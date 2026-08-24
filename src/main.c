@@ -58,6 +58,14 @@ typedef struct
     Color color;
 } BoardBlock;
 
+// TODO: We could do something like this, so we would have a "Point p" param instead of "float x, float y".
+// This requires some refactor though
+typedef struct
+{
+    float x;
+    float y;
+} Point;
+
 typedef struct
 {
     char name;
@@ -112,7 +120,7 @@ void drawLine(float x, float y, float endX, float endY)
 {
     Vector2 start = {.x = x, .y = y};
     Vector2 end = {.x = endX, .y = endY};
-    DrawLineEx(start, end, 2.0, BLACK);
+    DrawLineEx(start, end, 2.0f, BLACK);
 }
 
 void drawMatrix(Vector2 position, uint8_t width, uint8_t height)
@@ -126,15 +134,15 @@ void drawMatrix(Vector2 position, uint8_t width, uint8_t height)
             DrawRectangleRoundedLinesEx(rec, 0.1f, 1, 1, GRAY);
         }
     }
-    drawLine(position.x, position.y, position.x, position.y + (height * blockSize));
-    drawLine(position.x + (width * blockSize),
+    drawLine(position.x, position.y, position.x, position.y + (float)(height * blockSize));
+    drawLine(position.x + (float)(width * blockSize),
              position.y,
-             position.x + (width * blockSize),
-             position.y + (height * blockSize));
+             position.x + (float)(width * blockSize),
+             position.y + (float)(height * blockSize));
     drawLine(position.x,
-             position.y + (height * blockSize),
-             position.x + (width * blockSize),
-             position.y + (height * blockSize));
+             position.y + (float)(height * blockSize),
+             position.x + (float)(width * blockSize),
+             position.y + (float)(height * blockSize));
 }
 
 Vector2 absolutePositionFromGridPosition(Vector2 gridPosition, Vector2 matrixPosition)
@@ -147,8 +155,14 @@ Vector2 absolutePositionFromGridPosition(Vector2 gridPosition, Vector2 matrixPos
 void drawBlock(Color color, Vector2 gridPosition, Vector2 matrixPosition)
 {
     Vector2 absolutePosition = absolutePositionFromGridPosition(gridPosition, matrixPosition);
+
     Rectangle rect = {
-      .x = absolutePosition.x, .y = absolutePosition.y, .height = blockSize, .width = blockSize};
+      .x = absolutePosition.x,
+      .y = absolutePosition.y,
+      .height = blockSize,
+      .width = blockSize,
+    };
+
     DrawRectangleRec(rect, color);
     DrawRectangleLinesEx(rect, 1.0f, BLACK);
 }
@@ -161,8 +175,9 @@ void calculateBlockPositions(const Tetromino* tetromino,
     uint16_t mask = 0b1000000000000000;
     int positionCounter = 0;
     for (int i = 0; i < 16; i++) {
-        uint16_t exists = tetromino->definitions[rotation] & mask;
+        const uint16_t exists = tetromino->definitions[rotation] & mask;
         mask >>= 1;
+
         if (!exists) {
             continue;
         }
@@ -244,11 +259,12 @@ void drawPreview(Tetromino* previewTetromino)
     const int previewRows = 2;
     const int padding = 10;
 
-    Vector2 previewPosition = {.x = matrixPosition_.x + matrixWidth * blockSize + 50,
+    Vector2 previewPosition = {.x = matrixPosition_.x + (matrixWidth * blockSize) + 50,
                                .y = matrixPosition_.y + 10};
 
-    int panelWidth = previewCols * blockSize + 2 * padding;
-    int panelHeight = previewRows * blockSize + 2 * padding + 25;
+    int panelWidth = (previewCols * blockSize) + (2 * padding);
+    int panelHeight = (previewRows * blockSize) + (2 * padding) + 25;
+
     Rectangle panel = {
       .x = previewPosition.x,
       .y = previewPosition.y,
@@ -260,16 +276,21 @@ void drawPreview(Tetromino* previewTetromino)
     DrawRectangleRoundedLinesEx(panel, 0.15f, 8, 1.5f, GRAY);
     DrawText("NEXT", (int)previewPosition.x + 10, (int)previewPosition.y + 10, 18, BLACK);
 
-    int minCol, minRow, maxCol, maxRow;
+    int minCol;
+    int minRow;
+    int maxCol;
+    int maxRow;
+
     getPieceBounds(previewTetromino, 0, &minCol, &minRow, &maxCol, &maxRow);
     int pieceWidth = (maxCol - minCol + 1) * blockSize;
     int pieceHeight = (maxRow - minRow + 1) * blockSize;
 
-    Vector2 pieceTopLeft = {
-      .x = previewPosition.x + (float)padding + ((float)(previewCols * blockSize - pieceWidth) / 2),
-      .y =
-        previewPosition.y + (float)padding + ((float)(previewRows * blockSize - pieceHeight) / 2),
-    };
+    Vector2 pieceTopLeft = {.x = previewPosition.x
+                               + (float)padding
+                               + ((float)((previewCols * blockSize) - pieceWidth) / 2),
+                            .y = previewPosition.y
+                               + (float)padding
+                               + ((float)((previewRows * blockSize) - pieceHeight) / 2)};
 
     Vector2 localMatrix = {
       .x = pieceTopLeft.x - (float)(minCol * blockSize),
@@ -282,8 +303,11 @@ void drawPreview(Tetromino* previewTetromino)
 
 void drawScore(uint32_t score, unsigned level, uint32_t linesCleared)
 {
-    Vector2 scorePosition = {.x = matrixPosition_.x + matrixWidth * blockSize + 50,
-                             .y = matrixPosition_.y + matrixHeight * blockSize - 150};
+    Vector2 scorePosition = {
+      .x = matrixPosition_.x + (matrixWidth * blockSize) + 50,
+      .y = matrixPosition_.y + (matrixHeight * blockSize) - 150,
+    };
+
     char text[11];
 
     Color color = LIME;
