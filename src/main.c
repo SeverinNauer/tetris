@@ -441,6 +441,10 @@ int main(void)
 
     SetConfigFlags(FLAG_WINDOW_HIGHDPI);
     InitWindow(screenWidth, screenHeight, "Best Tetris Ever");
+    InitAudioDevice(); // Initialize audio device
+
+    Music music = LoadMusicStream("resources/music.mp3");
+    PlayMusicStream(music);
 
     SetTargetFPS(240);
 
@@ -457,9 +461,10 @@ int main(void)
 
     while (!WindowShouldClose()) {
         timer += GetFrameTime();
+      
+        UpdateMusicStream(music);
 
         uint32_t level = getCurrentLevel();
-
         if (IsKeyPressed(KEY_SPACE)) {
             uint32_t drop = 0;
             Vector2 positionToTest = {.x = current_position.x, .y = current_position.y + 1};
@@ -558,7 +563,8 @@ int main(void)
 
         EndDrawing();
     }
-
+    UnloadMusicStream(music);
+    loseAudioDevice();
     CloseWindow();
 
     return 0;
