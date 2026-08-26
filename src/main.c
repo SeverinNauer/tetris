@@ -461,7 +461,7 @@ int main(void)
 
     while (!WindowShouldClose()) {
         timer += GetFrameTime();
-      
+
         UpdateMusicStream(music);
 
         uint32_t level = getCurrentLevel();
@@ -564,7 +564,7 @@ int main(void)
         EndDrawing();
     }
     UnloadMusicStream(music);
-    loseAudioDevice();
+    CloseAudioDevice();
     CloseWindow();
 
     return 0;

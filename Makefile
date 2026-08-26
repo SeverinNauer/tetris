@@ -3,7 +3,7 @@
 all: build
 
 build:
-	cmake -B build && cmake --build build && ln -sf build/compile_commands.json .
+	cmake -B build -DUSE_EXTERNAL_GLFW=ON && cmake --build build && ln -sf build/compile_commands.json .
 
 run: build
 	nixGL ./build/raylib-demo
