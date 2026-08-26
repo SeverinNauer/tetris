@@ -11,18 +11,23 @@ pkgs.mkShell {
     gdb
     clang-tools
 
-    raylib
-    emscripten
-
-    # Wayland
+    glfw
     wayland
-    wayland-protocols
-    libxkbcommon
 
-    # OpenGL/EGL tools
-    mesa
-    mesa-demos
+    # X11
+    libx11
+    libx11.dev
+    libxcursor
+    libxi
+    libxinerama
+    libxrandr
 
     nixgl.auto.nixGLDefault
+  ];
+
+  LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath [
+    pkgs.wayland
+    pkgs.libxkbcommon
+    pkgs.alsa-lib
   ];
 }

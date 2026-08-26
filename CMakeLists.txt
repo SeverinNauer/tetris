@@ -5,13 +5,6 @@ set(CMAKE_C_STANDARD 23)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_COLOR_DIAGNOSTICS ON)
 
-# Can be removed now?
-#
-# # Pass Nix compiler flags so clangd can find includes in compile_commands.json
-# if(DEFINED ENV{NIX_CFLAGS_COMPILE})
-#   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} $ENV{NIX_CFLAGS_COMPILE}")
-# endif()
-
 include(FetchContent)
 
 FetchContent_Declare(raylib
@@ -48,9 +41,5 @@ target_compile_options(raylib-demo PRIVATE
     -Wredundant-decls
 )
 
-# Release optimizations
-add_compile_options(
-    $<$<CONFIG:Release>:-O3>
-    $<$<CONFIG:Release>:-flto=full>
-)
-add_link_options($<$<CONFIG:Release>:-flto=full>)
+add_compile_options(-O3 -flto=full)
+add_link_options(-flto=full)

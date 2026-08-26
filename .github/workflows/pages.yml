@@ -26,7 +26,7 @@ jobs:
           nix_path: nixpkgs=channel:nixos-unstable
 
       - name: Build WASM
-        run: nix-shell ci-shell.nix --run "make deps web"
+        run: nix-shell ci-shell.nix --run "make web"
 
       - name: Setup Pages
         uses: actions/configure-pages@v6
