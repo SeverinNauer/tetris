@@ -1,3 +1,5 @@
+#include "state.c"
+
 #include <raylib.h>
 #include <raymath.h>
 #include <stdbool.h>
@@ -39,67 +41,15 @@ static const float dropTime[] = {
   1.0f / 60.0f   // Level 29+
 };
 
-constexpr int screenWidth = 800;
-constexpr int screenHeight = 450;
-constexpr int blockSize = 20;
-constexpr int matrixWidth = 10;
-constexpr int matrixHeight = 20;
-constexpr uint32_t basePoints[4] = {40, 100, 300, 1200};
+const int screenWidth = 800;
+const int screenHeight = 450;
+const int blockSize = 20;
 
 // NOTE: I added a underline suffix to the following global variable to prevent shadowing
 uint32_t score_ = 0;
 uint32_t linesCleared_ = 0;
 
 Vector2 matrixPosition_ = {.x = 100, .y = 20};
-
-typedef struct
-{
-    bool isSet;
-    Color color;
-} BoardBlock;
-
-typedef struct
-{
-    char name;
-    uint16_t definitions[4];
-    Color color;
-} Tetromino;
-
-Tetromino O = {
-  .name = 'O',
-  .definitions = {0b0000011001100000, 0b0000011001100000, 0b0000011001100000, 0b0000011001100000},
-  .color = YELLOW
-};
-Tetromino I = {
-  .name = 'I',
-  .definitions = {0b0000111100000000, 0b0010001000100010, 0b0000000011110000, 0b0100010001000100},
-  .color = MAGENTA
-};
-Tetromino J = {
-  .name = 'J',
-  .definitions = {0b1000111000000000, 0b0110010001000000, 0b0000111000100000, 0b0100010011000000},
-  .color = BLUE
-};
-Tetromino L = {
-  .name = 'L',
-  .definitions = {0b0010111000000000, 0b0100010001100000, 0b0000111010000000, 0b1100010001000000},
-  .color = ORANGE
-};
-Tetromino S = {
-  .name = 'S',
-  .definitions = {0b0110110000000000, 0b0100011000100000, 0b0000011011000000, 0b1000110001000000},
-  .color = GREEN
-};
-Tetromino Z = {
-  .name = 'Z',
-  .definitions = {0b1100011000000000, 0b0010011001000000, 0b0000110001100000, 0b0100110010000000},
-  .color = RED
-};
-Tetromino T = {
-  .name = 'T',
-  .definitions = {0b0100111000000000, 0b0100011001000000, 0b0000111001000000, 0b0100110001000000},
-  .color = PURPLE
-};
 
 [[nodiscard]]
 float getCurrentDropTime(uint32_t level)
@@ -153,47 +103,24 @@ void drawBlock(Color color, Vector2 gridPosition, Vector2 matrixPosition)
     DrawRectangleLinesEx(rect, 1.0f, BLACK);
 }
 
-void calculateBlockPositions(const Tetromino* tetromino,
-                             Vector2 basePosition,
-                             int rotation,
-                             Vector2 output[4])
-{
-    uint16_t mask = 0b1000000000000000;
-    int positionCounter = 0;
-    for (int i = 0; i < 16; i++) {
-        uint16_t exists = tetromino->definitions[rotation] & mask;
-        mask >>= 1;
-        if (!exists) {
-            continue;
-        }
-
-        int col = i % 4;
-        int row = i / 4;
-        Vector2 blockPosition = {
-          .x = basePosition.x + (float)col,
-          .y = basePosition.y + (float)row,
-        };
-        output[positionCounter++] = blockPosition;
-    }
-}
-
-void drawTetromino(Vector2 position,
-                   const Tetromino* tetromino,
+void drawTetromino(const Tetromino* tetromino,
                    int rotation,
+                   Position position,
                    Vector2 matrixPosition)
 {
     Vector2 blockPositions[4];
-    calculateBlockPositions(tetromino, position, rotation, blockPositions);
+    uint16_t definition = tetromino->definitions[rotation];
+    calculateBlockPositions(position, definition, blockPositions);
     for (int i = 0; i < 4; i++) {
         Vector2 blockPosition = blockPositions[i];
         drawBlock(tetromino->color, blockPosition, matrixPosition);
     }
 }
 
-void drawStack(BoardBlock stack[matrixHeight][matrixWidth])
+void drawStack(BoardBlock stack[MATRIX_HEIGHT][MATRIX_WIDTH])
 {
-    for (int i = 0; i < matrixHeight; i++) {
-        for (int j = 0; j < matrixWidth; j++) {
+    for (int i = 0; i < MATRIX_HEIGHT; i++) {
+        for (int j = 0; j < MATRIX_WIDTH; j++) {
             BoardBlock block = stack[i][j];
             Vector2 gridPosition = {.x = (float)j, .y = (float)i};
             if (block.isSet) {
@@ -238,13 +165,13 @@ void getPieceBounds(const Tetromino* tetromino,
     }
 }
 
-void drawPreview(Tetromino* previewTetromino)
+void drawPreview(const Tetromino* previewTetromino)
 {
     const int previewCols = 4;
     const int previewRows = 2;
     const int padding = 10;
 
-    Vector2 previewPosition = {.x = matrixPosition_.x + matrixWidth * blockSize + 50,
+    Vector2 previewPosition = {.x = matrixPosition_.x + MATRIX_WIDTH * blockSize + 50,
                                .y = matrixPosition_.y + 10};
 
     int panelWidth = previewCols * blockSize + 2 * padding;
@@ -276,14 +203,14 @@ void drawPreview(Tetromino* previewTetromino)
       .y = pieceTopLeft.y + 25 - (float)(minRow * blockSize),
     };
 
-    Vector2 zeroPosition = {};
-    drawTetromino(zeroPosition, previewTetromino, 0, localMatrix);
+    Position zeroPosition = {};
+    drawTetromino(previewTetromino, 0, zeroPosition, localMatrix);
 }
 
 void drawScore(uint32_t score, unsigned level, uint32_t linesCleared)
 {
-    Vector2 scorePosition = {.x = matrixPosition_.x + matrixWidth * blockSize + 50,
-                             .y = matrixPosition_.y + matrixHeight * blockSize - 150};
+    Vector2 scorePosition = {.x = matrixPosition_.x + MATRIX_WIDTH * blockSize + 50,
+                             .y = matrixPosition_.y + MATRIX_HEIGHT * blockSize - 150};
     char text[11];
 
     Color color = LIME;
@@ -304,141 +231,8 @@ void drawScore(uint32_t score, unsigned level, uint32_t linesCleared)
     DrawText(text, scorePositionX, scorePositionY + 120, 24, color);
 }
 
-[[nodiscard]]
-bool canMove(Vector2 position,
-             const Tetromino* tetromino,
-             int rotation,
-             BoardBlock stack[matrixHeight][matrixWidth])
-{
-    Vector2 blockPositions[4];
-    calculateBlockPositions(tetromino, position, rotation, blockPositions);
-    for (int i = 0; i < 4; i++) {
-        Vector2 blockPosition = blockPositions[i];
-
-        if (blockPosition.x >= matrixWidth || blockPosition.x < 0) {
-            return false;
-        }
-
-        if (blockPosition.y >= matrixHeight || blockPosition.y < 0) {
-            return false;
-        }
-
-        if (stack[(int)blockPosition.y][(int)blockPosition.x].isSet) {
-            return false;
-        }
-    }
-    return true;
-}
-
-void updateStack(BoardBlock stack[matrixHeight][matrixWidth],
-                 const Tetromino* tetromino,
-                 Vector2 position,
-                 int rotation)
-{
-    Vector2 blocks[4];
-    calculateBlockPositions(tetromino, position, rotation, blocks);
-
-    for (int i = 0; i < 4; i++) {
-        Vector2 pos = blocks[i];
-
-        BoardBlock block = {
-          .isSet = true,
-          .color = tetromino->color,
-        };
-
-        stack[(int)pos.y][(int)pos.x] = block;
-    }
-}
-
-[[nodiscard]]
-bool isRowFull(BoardBlock stackRow[matrixWidth])
-{
-    for (int i = 0; i < matrixWidth; i++) {
-        BoardBlock block = stackRow[i];
-        if (!block.isSet) {
-            return false;
-        }
-    }
-    return true;
-}
-
-void shiftRowsDown(BoardBlock stack[matrixHeight][matrixWidth], int row)
-{
-    for (int i = row; i > 0; i--) {
-        for (int j = 0; j < matrixWidth; j++) {
-            stack[i][j].isSet = stack[i - 1][j].isSet;
-            stack[i][j].color = stack[i - 1][j].color;
-        }
-    }
-
-    for (int i = 0; i < matrixWidth; i++) {
-        stack[0][i].isSet = false;
-        stack[0][i].color = BLANK;
-    }
-}
-
-[[nodiscard]]
-uint32_t clearLines(BoardBlock stack[matrixHeight][matrixWidth])
-{
-    uint32_t lineCount = 0;
-    for (int i = matrixHeight - 1; i >= 0; i--) {
-        if (isRowFull(stack[i])) {
-            shiftRowsDown(stack, i);
-            i++;
-            lineCount++;
-        }
-    }
-    return lineCount;
-}
-
-[[nodiscard]]
-uint32_t getCurrentLevel()
-{
-    return linesCleared_ / 10;
-}
-
-void addToScore(uint32_t linesCount, uint32_t level)
-{
-    if (linesCount <= 0 || linesCount > 4) {
-        return;
-    }
-    score_ += basePoints[linesCount - 1] * (level + 1);
-}
-
-void lockAndRespawn(Tetromino* current,
-                    Tetromino* next,
-                    Vector2* position,
-                    int* rotation,
-                    BoardBlock stack[matrixHeight][matrixWidth],
-                    uint32_t level,
-                    Tetromino blockTypes[])
-{
-    updateStack(stack, current, *position, *rotation);
-    *rotation = 0;
-    const int rIndex = GetRandomValue(0, 6);
-    *current = *next;
-    *next = blockTypes[rIndex];
-    position->x = 4;
-    position->y = 0;
-
-    const uint32_t linesClearedNow = clearLines(stack);
-    addToScore(linesClearedNow, level);
-    linesCleared_ += linesClearedNow;
-}
-
 int main(void)
 {
-    Tetromino blockTypes[] = {O, Z, J, L, S, T, I};
-
-    BoardBlock stack[matrixHeight][matrixWidth];
-
-    for (int i = 0; i < matrixHeight; i++) {
-        for (int j = 0; j < matrixWidth; j++) {
-            BoardBlock block = {.isSet = false, .color = BLANK};
-            stack[i][j] = block;
-        }
-    }
-
     SetConfigFlags(FLAG_WINDOW_HIGHDPI);
     InitWindow(screenWidth, screenHeight, "Best Tetris Ever");
     InitAudioDevice(); // Initialize audio device
@@ -448,106 +242,87 @@ int main(void)
 
     SetTargetFPS(240);
 
-    int tetrominoIndex = GetRandomValue(0, 6);
-    Tetromino current_tetromino = blockTypes[tetrominoIndex];
-
-    tetrominoIndex = GetRandomValue(0, 6);
-    Tetromino next_tetromino = blockTypes[tetrominoIndex];
-
-    Vector2 current_position = {.x = 4, .y = 0};
+    GameState state = {};
+    initGameState(&state);
 
     float timer = 0.0f;
-    int current_rotation = 0;
 
     while (!WindowShouldClose()) {
         timer += GetFrameTime();
 
         UpdateMusicStream(music);
 
-        uint32_t level = getCurrentLevel();
         if (IsKeyPressed(KEY_SPACE)) {
             uint32_t drop = 0;
-            Vector2 positionToTest = {.x = current_position.x, .y = current_position.y + 1};
-            while (canMove(positionToTest, &current_tetromino, current_rotation, stack)) {
-                current_position.y += 1.0f;
+            Position positionToTest = {.x = state.current_tetromino.position.x,
+                                       .y = state.current_tetromino.position.y + 1};
+            while (canMove(positionToTest, state.current_tetromino.rotation, &state)) {
+                state.current_tetromino.position = positionToTest;
                 drop++;
-                positionToTest.y += 1.0f;
+                positionToTest.y += 1;
             }
             score_ += drop;
-            lockAndRespawn(&current_tetromino,
-                           &next_tetromino,
-                           &current_position,
-                           &current_rotation,
-                           stack,
-                           level,
-                           blockTypes);
+            lockAndRespawn(&state);
             timer = 0;
         }
 
         if (IsKeyPressed(KEY_DOWN) || IsKeyPressed(KEY_J)) {
-            Vector2 positionToTest = {.x = current_position.x, .y = current_position.y + 1};
-            if (canMove(positionToTest, &current_tetromino, current_rotation, stack)) {
-                current_position.y += 1.0f;
+            Position positionToTest = {.x = state.current_tetromino.position.x,
+                                       .y = state.current_tetromino.position.y + 1};
+            if (canMove(positionToTest, state.current_tetromino.rotation, &state)) {
+                state.current_tetromino.position = positionToTest;
                 score_ += 1;
             } else {
-                lockAndRespawn(&current_tetromino,
-                               &next_tetromino,
-                               &current_position,
-                               &current_rotation,
-                               stack,
-                               level,
-                               blockTypes);
+                lockAndRespawn(&state);
             }
             timer = 0;
         }
 
-        const float currentDropTime =
-          (IsKeyDown(KEY_DOWN) || IsKeyDown(KEY_J)) ? 0.08f : getCurrentDropTime(level);
+        const float currentDropTime = (IsKeyDown(KEY_DOWN) || IsKeyDown(KEY_J))
+                                      ? 0.08f
+                                      : getCurrentDropTime(getCurrentLevel(&state));
 
         if (timer >= currentDropTime) {
-            Vector2 positionToTest = {.x = current_position.x, .y = current_position.y + 1};
-            if (canMove(positionToTest, &current_tetromino, current_rotation, stack)) {
+            Position positionToTest = {.x = state.current_tetromino.position.x,
+                                       .y = state.current_tetromino.position.y + 1};
+            if (canMove(positionToTest, state.current_tetromino.rotation, &state)) {
                 if (IsKeyDown(KEY_DOWN) || IsKeyDown(KEY_J)) {
                     score_ += 1;
                 }
-                current_position.y += 1.0f;
+                state.current_tetromino.position = positionToTest;
             } else {
-                lockAndRespawn(&current_tetromino,
-                               &next_tetromino,
-                               &current_position,
-                               &current_rotation,
-                               stack,
-                               level,
-                               blockTypes);
+                lockAndRespawn(&state);
             }
             timer = 0;
         }
 
         if (IsKeyPressed(KEY_UP) || IsKeyPressed(KEY_K)) {
-            int next_rotation = (current_rotation + 1) % 4;
-            if (canMove(current_position, &current_tetromino, next_rotation, stack)) {
-                current_rotation = next_rotation;
+            int next_rotation = (state.current_tetromino.rotation + 1) % 4;
+            if (canMove(state.current_tetromino.position, next_rotation, &state)) {
+                state.current_tetromino.rotation = next_rotation;
             }
         }
 
         if (IsKeyPressed(KEY_RIGHT_CONTROL)) {
-            int next_rotation = (current_rotation + 4 - 1) % 4;
-            if (canMove(current_position, &current_tetromino, next_rotation, stack)) {
-                current_rotation = next_rotation;
+            int next_rotation = (state.current_tetromino.rotation + 4 - 1) % 4;
+            if (canMove(state.current_tetromino.position, next_rotation, &state)) {
+                state.current_tetromino.rotation = next_rotation;
             }
         }
 
         if (IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_L)) {
-            Vector2 positionToTest = {.x = current_position.x + 1, .y = current_position.y};
-            if (canMove(positionToTest, &current_tetromino, current_rotation, stack)) {
-                current_position.x += 1.0f;
+            Position positionToTest = {.x = state.current_tetromino.position.x + 1,
+                                       .y = state.current_tetromino.position.y};
+            if (canMove(positionToTest, state.current_tetromino.rotation, &state)) {
+                state.current_tetromino.position = positionToTest;
             }
         }
 
         if (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_H)) {
-            Vector2 positionToTest = {.x = current_position.x - 1, .y = current_position.y};
-            if (canMove(positionToTest, &current_tetromino, current_rotation, stack)) {
-                current_position.x -= 1.0f;
+            Position positionToTest = {.x = state.current_tetromino.position.x - 1,
+                                       .y = state.current_tetromino.position.y};
+            if (canMove(positionToTest, state.current_tetromino.rotation, &state)) {
+                state.current_tetromino.position = positionToTest;
             }
         }
 
@@ -555,11 +330,14 @@ int main(void)
 
         ClearBackground(RAYWHITE);
 
-        drawMatrix(matrixPosition_, matrixWidth, matrixHeight);
-        drawTetromino(current_position, &current_tetromino, current_rotation, matrixPosition_);
-        drawPreview(&next_tetromino);
-        drawStack(stack);
-        drawScore(score_, level, linesCleared_);
+        drawMatrix(matrixPosition_, MATRIX_WIDTH, MATRIX_HEIGHT);
+        drawTetromino(state.current_tetromino.tetromino,
+                      state.current_tetromino.rotation,
+                      state.current_tetromino.position,
+                      matrixPosition_);
+        drawPreview(state.next_tetromino);
+        drawStack(state.board);
+        drawScore(state.score, getCurrentLevel(&state), state.linesCleared);
 
         EndDrawing();
     }
