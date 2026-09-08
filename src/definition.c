@@ -1,3 +1,5 @@
+#pragma once
+
 #include <raylib.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -57,7 +59,7 @@ const Tetromino T = {
   .color = PURPLE
 };
 
-#define BLOCK_SIZE 20;
+#define BLOCK_SIZE 20
 #define MATRIX_WIDTH 10
 #define MATRIX_HEIGHT 20
 

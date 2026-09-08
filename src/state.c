@@ -1,3 +1,5 @@
+#pragma once
+
 #include "definition.c"
 
 #include <stdint.h>
@@ -26,7 +28,7 @@ uint32_t getCurrentLevel(const GameState* state)
 void addToScore(uint32_t linesCount, GameState* state)
 {
     uint32_t level = getCurrentLevel(state);
-    if (linesCount <= 0 || linesCount > 4) {
+    if (linesCount == 0 || linesCount > 4) {
         return;
     }
     state->score += basePoints[linesCount - 1] * (level + 1);
@@ -113,16 +115,26 @@ uint32_t clearLines(GameState* state)
     return lineCount;
 }
 
+[[nodiscard]]
+static const Tetromino* randomTetromino(void)
+{
+    const int bound = (int)(sizeof blockTypes / sizeof blockTypes[0]) - 1;
+    return &blockTypes[GetRandomValue(0, bound)];
+}
+
+void spawnCurrent(GameState* state)
+{
+    state->current_tetromino.tetromino = state->next_tetromino;
+    state->current_tetromino.rotation = 0;
+    state->current_tetromino.position.x = 4;
+    state->current_tetromino.position.y = 0;
+    state->next_tetromino = randomTetromino();
+}
+
 void lockAndRespawn(GameState* state)
 {
     updateStack(state);
-    state->current_tetromino.rotation = 0;
-    state->current_tetromino.tetromino = state->next_tetromino;
-    const int rIndex = GetRandomValue(0, 6);
-    state->next_tetromino = &blockTypes[rIndex];
-
-    state->current_tetromino.position.x = 4;
-    state->current_tetromino.position.y = 0;
+    spawnCurrent(state);
 
     uint32_t linesClearedNow = clearLines(state);
     addToScore(linesClearedNow, state);
@@ -153,6 +165,29 @@ bool canMove(Position positionToTest, int rotationToTest, const GameState* state
     return true;
 }
 
+bool moveBlock(GameState* state, Position delta)
+{
+    Position newPosition = {
+      .x = state->current_tetromino.position.x + delta.x,
+      .y = state->current_tetromino.position.y + delta.y,
+    };
+    if (!canMove(newPosition, state->current_tetromino.rotation, state)) {
+        return false;
+    }
+    state->current_tetromino.position = newPosition;
+    return true;
+}
+
+bool rotateBlock(GameState* state, int direction)
+{
+    int nextRotation = (state->current_tetromino.rotation + direction + 4) % 4;
+    if (!canMove(state->current_tetromino.position, nextRotation, state)) {
+        return false;
+    }
+    state->current_tetromino.rotation = nextRotation;
+    return true;
+}
+
 void initGameState(GameState* state)
 {
     for (int i = 0; i < MATRIX_HEIGHT; i++) {
@@ -161,11 +196,6 @@ void initGameState(GameState* state)
             state->board[i][j] = block;
         }
     }
-    int tetrominoIndex = GetRandomValue(0, 6);
-    state->current_tetromino.tetromino = &blockTypes[tetrominoIndex];
-    state->current_tetromino.position.x = 4;
-    state->current_tetromino.position.y = 0;
-
-    tetrominoIndex = GetRandomValue(0, 6);
-    state->next_tetromino = &blockTypes[tetrominoIndex];
+    state->next_tetromino = randomTetromino();
+    spawnCurrent(state);
 }
